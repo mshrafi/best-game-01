@@ -5,7 +5,7 @@
 // Outside the grader, MAKEFUN_OUTPUT_DIR stands in for /output; without it
 // the program writes to /output. Running it twice writes identical bytes.
 
-import { cpSync, existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildDossier } from './vendor/makefun-game.ts';
@@ -14,8 +14,12 @@ const repoRoot = fileURLToPath(new URL('.', import.meta.url));
 const outputDir = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
 
 // Start from a clean output directory so stale files never leak in.
-rmSync(outputDir, { recursive: true, force: true });
+// Empty the directory's contents instead of removing the directory itself:
+// in the grader /output is a mount point, and removing a mount point fails.
 mkdirSync(outputDir, { recursive: true });
+for (const child of readdirSync(outputDir)) {
+  rmSync(join(outputDir, child), { recursive: true, force: true });
+}
 
 cpSync(join(repoRoot, 'game'), join(outputDir, 'game'), { recursive: true });
 if (existsSync(join(repoRoot, 'screenshots'))) {
